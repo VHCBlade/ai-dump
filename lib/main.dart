@@ -1,4 +1,8 @@
+import 'dart:io';
+
+import 'package:ai_dump/theme.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 
 void main() {
   runApp(const MyApp());
@@ -10,36 +14,12 @@ class MyApp extends StatelessWidget {
   // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Flutter Demo',
-      theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // Try running your application with "flutter run". You'll see the
-        // application has a blue toolbar. Then, without quitting the app, try
-        // changing the primarySwatch below to Colors.green and then invoke
-        // "hot reload" (press "r" in the console where you ran "flutter run",
-        // or simply save your changes to "hot reload" in a Flutter IDE).
-        // Notice that the counter didn't reset back to zero; the application
-        // is not restarted.
-        primarySwatch: Colors.blue,
-      ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
-    );
+    return const MyHomePage(title: "Theme Producer");
   }
 }
 
 class MyHomePage extends StatefulWidget {
   const MyHomePage({super.key, required this.title});
-
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
-
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
 
   final String title;
 
@@ -48,68 +28,136 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
+  final loadedThemes = <LoadedThemeData>[];
+  final savedThemes = <LoadedThemeData>[];
 
-  void _incrementCounter() {
-    setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
-    });
+  LoadedThemeData? get loadedTheme =>
+      loadedThemes.isEmpty ? null : loadedThemes.first;
+  ThemeData? get theme => loadedTheme?.theme;
+
+  final filename = "saved_themes.dart";
+
+  void save() async {
+    if (loadedTheme == null) {
+      return;
+    }
+
+    savedThemes.add(loadedTheme!);
+    loadedThemes.removeAt(0);
+    final file = File(filename);
+    // print(file.absolute.path);
+    await file.writeAsString(
+        "final themes = [\n${savedThemes.map((e) => "VHCBladeTheme("
+            "name: '${e.name}',"
+            "primaryColor: const Color(${e.primaryColor.value}),"
+            "secondaryColor: const Color(${e.secondaryColor.value}),"
+            "cardColor: const Color(${e.cardColor.value}),"
+            "highlightColor: const Color(${e.highlightColor.value}),"
+            "backgroundColor: Color(${e.backgroundColor.value})),").join("\n")}\n];");
+
+    setState(() {});
+  }
+
+  @override
+  void initState() {
+    super.initState();
+    loadThemes();
+  }
+
+  void loadThemes() async {
+    final themes = await rootBundle.loadString("dump/themes.csv");
+    for (final row in themes.split("\n").skip(1)) {
+      final splitRow = row.split(",");
+      if (splitRow.length < 3) {
+        continue;
+      }
+      loadedThemes.add(LoadedThemeData(
+          name: splitRow[0],
+          primaryColor: Color(
+              int.parse(splitRow[1].substring(1), radix: 16) + 0xFF000000),
+          secondaryColor: Color(
+              int.parse(splitRow[2].substring(1), radix: 16) + 0xFF000000)));
+    }
+
+    setState(() {});
   }
 
   @override
   Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
-    return Scaffold(
-      appBar: AppBar(
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        title: Text(widget.title),
-      ),
-      body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
-        child: Column(
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Invoke "debug painting" (press "p" in the console, choose the
-          // "Toggle Debug Paint" action from the Flutter Inspector in Android
-          // Studio, or the "Toggle Debug Paint" command in Visual Studio Code)
-          // to see the wireframe for each widget.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            const Text(
-              'You have pushed the button this many times:',
-            ),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headlineMedium,
-            ),
-          ],
+    return MaterialApp(
+      title: 'Flutter Demo',
+      theme: theme,
+      home: Scaffold(
+        appBar: AppBar(
+          title: Text(loadedTheme?.name ?? widget.title),
         ),
+        body: loadedTheme == null
+            ? Center(child: Container())
+            : ListView(
+                physics: const AlwaysScrollableScrollPhysics(),
+                children: [
+                    Padding(
+                      padding: const EdgeInsets.all(10),
+                      child: OutlinedButton(
+                          onPressed: () {},
+                          child: const Text("Set Primary Color")),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.all(10),
+                      child: ElevatedButton(
+                          onPressed: () {},
+                          child: const Text("Set Secondary Color")),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.all(10),
+                      child: ListTile(
+                          onTap: () => setState(() => loadedTheme!.brightness =
+                              theme!.brightness == Brightness.dark
+                                  ? Brightness.light
+                                  : Brightness.dark),
+                          title: const Text("Toggle Brightness")),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.all(10),
+                      child: TextButton(
+                          onPressed: () => setState(() {
+                                loadedTheme!.backgroundColor = Colors.white;
+                                loadedTheme!.recalcCardColor();
+                              }),
+                          child: const Text("Set Background Color to white")),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.all(10),
+                      child: TextButton(
+                          onPressed: () => setState(() {
+                                loadedTheme!.backgroundColor =
+                                    const Color.fromARGB(255, 35, 35, 35);
+                                loadedTheme!.recalcCardColor();
+                              }),
+                          child: const Text("Set Background Color to gray")),
+                    ),
+                    Padding(
+                      padding: const EdgeInsets.all(10),
+                      child: TextButton(
+                          onPressed: () => setState(() {
+                                loadedTheme!.backgroundColor =
+                                    loadedTheme!.secondaryColor;
+                                loadedTheme!.recalcCardColor();
+                              }),
+                          child: const Text(
+                              "Set Background Color to secondary color")),
+                    ),
+                    Card(
+                        child: Column(
+                      children: [
+                        const Text("This is the example of a card!"),
+                        const Text("Hooray!"),
+                        ElevatedButton(
+                            onPressed: save, child: const Text("Save Theme")),
+                      ],
+                    ))
+                  ]),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
-      ), // This trailing comma makes auto-formatting nicer for build methods.
     );
   }
 }
