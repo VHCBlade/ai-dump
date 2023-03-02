@@ -1,8 +1,8 @@
 import 'dart:io';
 
+import 'package:ai_dump/saved_themes.dart';
 import 'package:ai_dump/theme.dart';
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 
 void main() {
   runApp(const MyApp());
@@ -49,6 +49,7 @@ class _MyHomePageState extends State<MyHomePage> {
     await file.writeAsString(
         "final themes = [\n${savedThemes.map((e) => "VHCBladeTheme("
             "name: '${e.name}',"
+            "brightness: ${e.brightness},"
             "primaryColor: const Color(${e.primaryColor.value}),"
             "secondaryColor: const Color(${e.secondaryColor.value}),"
             "cardColor: const Color(${e.cardColor.value}),"
@@ -65,18 +66,31 @@ class _MyHomePageState extends State<MyHomePage> {
   }
 
   void loadThemes() async {
-    final themes = await rootBundle.loadString("dump/themes.csv");
-    for (final row in themes.split("\n").skip(1)) {
-      final splitRow = row.split(",");
-      if (splitRow.length < 3) {
-        continue;
-      }
+    // This is for loading from the ai dump
+    // final themes = await rootBundle.loadString("dump/themes.csv");
+    // for (final row in themes.split("\n").skip(1)) {
+    //   final splitRow = row.split(",");
+    //   if (splitRow.length < 3) {
+    //     continue;
+    //   }
+    //   loadedThemes.add(LoadedThemeData(
+    //       name: splitRow[0],
+    //       primaryColor: Color(
+    //           int.parse(splitRow[1].substring(1), radix: 16) + 0xFF000000),
+    //       secondaryColor: Color(
+    //           int.parse(splitRow[2].substring(1), radix: 16) + 0xFF000000)));
+    // }
+
+    // This is for loading from the already created themes
+    for (final theme in themes) {
       loadedThemes.add(LoadedThemeData(
-          name: splitRow[0],
-          primaryColor: Color(
-              int.parse(splitRow[1].substring(1), radix: 16) + 0xFF000000),
-          secondaryColor: Color(
-              int.parse(splitRow[2].substring(1), radix: 16) + 0xFF000000)));
+          name: theme.name,
+          primaryColor: theme.primaryColor,
+          secondaryColor: theme.secondaryColor)
+        ..backgroundColor = theme.backgroundColor
+        ..brightness = theme.brightness
+        ..cardColor = theme.cardColor
+        ..highlightColor = theme.highlightColor);
     }
 
     setState(() {});

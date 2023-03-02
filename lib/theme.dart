@@ -63,6 +63,7 @@ class VHCBladeTheme {
   Color highlightColor;
   Color backgroundColor;
   Color secondaryColor;
+  Brightness brightness;
 
   VHCBladeTheme({
     required this.name,
@@ -71,5 +72,6 @@ class VHCBladeTheme {
     required this.highlightColor,
     required this.backgroundColor,
     required this.secondaryColor,
+    this.brightness = Brightness.dark,
   });
 }
